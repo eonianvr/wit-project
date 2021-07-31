@@ -160,45 +160,6 @@ void accessData(JSONObject obj){
         {
             Debug.Log("Got the following entities back: " + string.Join(", ", parameters));
         }
-// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse); 
-    public class Intent
-    {
-        public string id { get; set; }
-        public string name { get; set; }
-        public int confidence { get; set; }
-    }
-
-    public class SubjectSubject
-    {
-        public string id { get; set; }
-        public string name { get; set; }
-        public string role { get; set; }
-        public int start { get; set; }
-        public int end { get; set; }
-        public string body { get; set; }
-        public double confidence { get; set; }
-        public List<object> entities { get; set; }
-        public string value { get; set; }
-        public string type { get; set; }
-    }
-
-    public class Entities
-    {
-        [JsonProperty("subject:subject")]
-        public List<SubjectSubject> SubjectSubject { get; set; }
-    }
-
-    public class Traits
-    {
-    }
-
-    public class Root
-    {
-        public string text { get; set; }
-        public List<Intent> intents { get; set; }
-        public Entities entities { get; set; }
-        public Traits traits { get; set; }
-    }
 
 
         

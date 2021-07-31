@@ -30,7 +30,14 @@ namespace com.facebook.witai.samples.responsedebugger
         private string pendingText;
          [SerializeField] private TextMeshProUGUI id_field;
 
-      
+       public class ClientData {
+            public int id;
+            public string name;
+            public int confidenceName;
+            public string body;
+            public float confidenceBody;
+            public string value;
+        
 
     }
 
@@ -44,7 +51,15 @@ namespace com.facebook.witai.samples.responsedebugger
             if (null != pendingText)
             {
                 textArea.text = pendingText; 
-                  
+                ClientData clientData = new ClientData();
+
+
+              ClientData LoadClientData = JsonUtility.FromJson<ClientData>(pendingText);
+
+                Debug.Log("id': "+LoadClientData.id);
+           //    private vomit;
+             //  vomit = textAreaSerialized.text;
+        //   vomit.ToString(LoadClientData);
                 pendingText = null;
             }
         }
@@ -107,9 +122,6 @@ namespace com.facebook.witai.samples.responsedebugger
         {
             Debug.Log("Got the following entities back: " + string.Join(", ", parameters));
         }
-
-
-        
     }
 
  

@@ -1,103 +1,129 @@
-//#define PERFTEST        //For testing performance of parse/stringify.  Turn on editor profiling to see how we're doing
-
-using UnityEngine;
-using UnityEditor;
-#if UNITY_2017_1_OR_NEWER
-using UnityEngine.Networking;
-#endif
-
 /*
-Copyright (c) 2010-2019 Matt Schoen
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+using System.Net;
+using com.facebook.witai.lib;
+using TMPro;
+using UnityEngine;
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+namespace com.facebook.witai.samples.responsedebugger
+{
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-*/
 
-public class JSONChecker : EditorWindow {
-	string JSON = @"{
-	""TestObject"": {
-		""SomeText"": ""Blah"",
-		""SomeObject"": {
-			""SomeNumber"": 42,
-			""SomeFloat"": 13.37,
-			""SomeBool"": true,
-			""SomeNull"": null
-		},
+    public class WitUIInteractionHandler : MonoBehaviour
 
-		""SomeEmptyObject"": { },
-		""SomeEmptyArray"": [ ],
-		""EmbeddedObject"": ""{\""field\"":\""Value with \\\""escaped quotes\\\""\""}""
-	}
-}";	  //dat string literal...
-	string URL = "";
-	JSONObject j;
-	[MenuItem("Window/JSONChecker")]
-	static void Init() {
-		GetWindow(typeof(JSONChecker));
-	}
-	void OnGUI() {
-		JSON = EditorGUILayout.TextArea(JSON);
-		GUI.enabled = !string.IsNullOrEmpty(JSON);
-		if(GUILayout.Button("Check JSON")) {
-#if PERFTEST
-            Profiler.BeginSample("JSONParse");
-			j = JSONObject.Create(JSON);
-            Profiler.EndSample();
-            Profiler.BeginSample("JSONStringify");
-            j.ToString(true);
-            Profiler.EndSample();
-#else
-			j = JSONObject.Create(JSON);
-#endif
-			Debug.Log(j.ToString(true));
-		}
-		EditorGUILayout.Separator();
-		URL = EditorGUILayout.TextField("URL", URL);
-		if (GUILayout.Button("Get JSON")) {
-			Debug.Log(URL);
-#if UNITY_2017_1_OR_NEWER
-			var test = new UnityWebRequest(URL);
-			test.SendWebRequest();
-			while (!test.isDone && !test.isNetworkError) ;
-#else
-			var test = new WWW(URL);
- 			while (!test.isDone) ;
-#endif
-			if (!string.IsNullOrEmpty(test.error)) {
-				Debug.Log(test.error);
-			} else {
-#if UNITY_2017_1_OR_NEWER
-				var text = test.downloadHandler.text;
-#else
-				var text = test.text;
-#endif
-				Debug.Log(text);
-				j = new JSONObject(text);
-				Debug.Log(j.ToString(true));
-			}
-		}
-		if(j) {
-			//Debug.Log(System.GC.GetTotalMemory(false) + "");
-			if(j.type == JSONObject.Type.NULL)
-				GUILayout.Label("JSON fail:\n" + j.ToString(true));
-			else
-				GUILayout.Label("JSON success:\n" + j.ToString(true));
 
-		}
-	}
+    {
+        [Header("Wit")]
+        [SerializeField] private Wit wit;
+        [Header("UI")]
+        [SerializeField] private TMP_InputField inputField;
+        [SerializeField] private TextMeshProUGUI textArea;
+        [SerializeField] private TextMeshProUGUI textAreaSerialized;
+        [Header("Configuration")]
+        [SerializeField] private bool showJson;
+
+        private string pendingText;
+         [SerializeField] private TextMeshProUGUI id_field;
+
+       public class ClientData {
+            public int id;
+            public string name;
+            public int confidenceName;
+            public string body;
+            public float confidenceBody;
+            public string value;
+        
+
+    }
+
+        private void OnValidate()
+        {
+            if (!wit) wit = FindObjectOfType<Wit>();
+        }
+
+        private void Update()
+        {
+            if (null != pendingText)
+            {
+                textArea.text = pendingText; 
+                ClientData clientData = new ClientData();
+
+
+              ClientData LoadClientData = JsonUtility.FromJson<ClientData>(pendingText);
+
+                Debug.Log("id': "+LoadClientData.id);
+           //    private vomit;
+             //  vomit = textAreaSerialized.text;
+        //   vomit.ToString(LoadClientData);
+                pendingText = null;
+            }
+        }
+
+        private void OnEnable()
+        {
+            wit.events.OnRequestCreated.AddListener(OnRequestStarted);
+        }
+
+        private void OnDisable()
+        {
+            wit.events.OnRequestCreated.RemoveListener(OnRequestStarted);
+        }
+
+        private void OnRequestStarted(WitRequest request)
+        {
+            // The raw response comes back on a different thread. We store the
+            // message received for display on the next frame.
+            if (showJson) request.onRawResponse += (response) => pendingText = response;
+            request.onResponse += (r) =>
+            {
+                if (r.StatusCode == (int) HttpStatusCode.OK)
+                {
+                    OnResponse(r.ResponseData);
+                }
+                else
+                {
+                    OnError($"Error {r.StatusCode}", r.StatusDescription);
+                }
+            };
+        }
+
+        public void OnResponse(WitResponseNode response)
+        {
+            if (!showJson) textArea.text = response["text"];
+        }
+
+        public void OnError(string error, string message)
+        {
+            textArea.text = $"Error: {error}\n\n{message}";
+        }
+
+        public void ToggleActivation()
+        {
+            if (wit.Active) wit.Deactivate();
+            else
+            {
+                textArea.text = "The mic is active, start speaking now.";
+                wit.Activate();
+            }
+        }
+
+        public void Send()
+        {
+            textArea.text = $"Sending \"{inputField.text}\" to Wit.ai for processing...";
+            wit.Activate(inputField.text);
+        }
+
+        public void LogResults(string[] parameters)
+        {
+            Debug.Log("Got the following entities back: " + string.Join(", ", parameters));
+        }
+    }
+
+ 
+
 }

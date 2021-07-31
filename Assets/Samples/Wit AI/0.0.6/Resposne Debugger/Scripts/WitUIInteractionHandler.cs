@@ -30,14 +30,7 @@ namespace com.facebook.witai.samples.responsedebugger
         private string pendingText;
          [SerializeField] private TextMeshProUGUI id_field;
 
-       public class ClientData {
-            public int id;
-            public string name;
-            public int confidenceName;
-            public string body;
-            public float confidenceBody;
-            public string value;
-        
+      
 
     }
 
@@ -51,57 +44,11 @@ namespace com.facebook.witai.samples.responsedebugger
             if (null != pendingText)
             {
                 textArea.text = pendingText; 
-                ClientData clientData = new ClientData();
-            /*    clientData.id= 0;
-                clientData.name="none";
-                clientData.confidenceName=0;
-                clientData.body="none";
-                clientData.confidenceBody=0;
-                clientData.value="none"; */
-JSONObject j = new JSONObject(pendingText);
-
-               accessData(j);
-             /* ClientData LoadClientData = JsonUtility.FromJson<ClientData>(pendingText);
-                Debug.Log("id: "+LoadClientData.id);
-                 Debug.Log("name: "+LoadClientData.name);
-                    Debug.Log("body: "+LoadClientData.body);
-                Debug.Log("done!");*/
-           //    private vomit;
-             //  vomit = textAreaSerialized.text;
-        //   vomit.ToString(LoadClientData);
+                  
                 pendingText = null;
             }
         }
-void accessData(JSONObject obj){
-    switch(obj.type){
-        case JSONObject.Type.OBJECT:
-            for(int i = 0; i < obj.list.Count; i++){
-                string key = (string)obj.keys[i];
-                JSONObject j = (JSONObject)obj.list[i];
-                Debug.Log(key);
-                accessData(j);
-            }
-            break;
-        case JSONObject.Type.ARRAY:
-            foreach(JSONObject j in obj.list){
-                accessData(j);
-            }
-            break;
-        case JSONObject.Type.STRING:
-            Debug.Log(obj.str);
-            break;
-        case JSONObject.Type.NUMBER:
-            Debug.Log(obj.n);
-            break;
-        case JSONObject.Type.BOOL:
-            Debug.Log(obj.b);
-            break;
-        case JSONObject.Type.NULL:
-            Debug.Log("NULL");
-            break;
-        
-    }
-}
+
         private void OnEnable()
         {
             wit.events.OnRequestCreated.AddListener(OnRequestStarted);

@@ -9,6 +9,7 @@ using System.Net;
 using com.facebook.witai.lib;
 using TMPro;
 using UnityEngine;
+using System;
 
 namespace com.facebook.witai.samples.responsedebugger
 {
@@ -21,6 +22,8 @@ namespace com.facebook.witai.samples.responsedebugger
         [SerializeField] private TextMeshProUGUI textArea;
         [Header("Configuration")]
         [SerializeField] private bool showJson;
+        public Action<string> onResponseCallback;
+
 
         private string pendingText;
 
@@ -35,6 +38,7 @@ namespace com.facebook.witai.samples.responsedebugger
             {
                 textArea.text = pendingText;
                 pendingText = null;
+                
             }
         }
 
@@ -52,23 +56,21 @@ namespace com.facebook.witai.samples.responsedebugger
         {
             // The raw response comes back on a different thread. We store the
             // message received for display on the next frame.
-            if (showJson) request.onRawResponse += (response) => pendingText = response;
-            request.onResponse += (r) =>
+            request.onRawResponse += (r) =>
             {
-                if (r.StatusCode == (int) HttpStatusCode.OK)
-                {
-                    OnResponse(r.ResponseData);
-                }
-                else
-                {
-                    OnError($"Error {r.StatusCode}", r.StatusDescription);
-                }
+                OnResponse(r);
             };
         }
 
         public void OnResponse(WitResponseNode response)
         {
-            if (!showJson) textArea.text = response["text"];
+            if(onResponseCallback != null)
+            {
+                onResponseCallback(response);
+                
+            }
+            if (showJson) pendingText = response;
+         // if (showJson)  pendingText=null;
         }
 
         public void OnError(string error, string message)
